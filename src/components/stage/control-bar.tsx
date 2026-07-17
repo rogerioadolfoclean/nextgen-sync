@@ -25,13 +25,19 @@ export function ControlButton({
   badge,
   onClick,
   compact = false,
-}: Omit<Control, "key"> & { compact?: boolean }) {
+  round = false,
+}: Omit<Control, "key"> & { compact?: boolean; round?: boolean }) {
+  // Sur mobile le mockup pose chaque glyphe dans un rond gris ; sur PC et
+  // tablette la tuile est transparente et ne s'allume qu'au survol.
+  const shape = round ? "size-11 rounded-full" : compact ? "size-8 rounded-lg" : "size-9 rounded-lg";
   const tile =
     tone === "active"
       ? "bg-accent-green text-white"
       : tone === "off"
         ? "bg-danger text-white"
-        : "text-white group-hover:bg-white/10";
+        : round
+          ? "bg-white/12 text-white hover:bg-white/20"
+          : "text-white group-hover:bg-white/10";
 
   return (
     <button
@@ -42,8 +48,8 @@ export function ControlButton({
       className="group flex flex-col items-center gap-1 outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-stage"
     >
       <span
-        className={`relative grid place-items-center rounded-lg transition-colors ${tile} ${
-          compact ? "size-8" : "size-9"
+        className={`relative grid place-items-center transition-colors ${shape} ${tile} ${
+          tone === "active" && round ? "rounded-xl" : ""
         }`}
       >
         <Icon size={compact ? 17 : 19} />

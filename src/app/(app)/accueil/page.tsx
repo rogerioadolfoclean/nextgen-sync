@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/session";
 import { getUpcomingMeetings, getRecentRecordings, getVideoMessages } from "@/lib/data";
 import { Avatar } from "@/components/avatar";
 import { Card, CardHeader, SeeAllLink, Badge, CountDot, ActionButton, JoinPill } from "@/components/ui";
+import { MobileHome } from "@/components/mobile-home";
 
 export default async function AccueilPage() {
   const user = await getSessionUser();
@@ -16,7 +17,10 @@ export default async function AccueilPage() {
   const firstName = user.name.split(" ")[0];
 
   return (
-    <div className="mx-auto max-w-[1100px] px-5 py-6 md:px-7">
+    <>
+      <MobileHome firstName={firstName} meetings={meetings} messages={messages} />
+
+      <div className="mx-auto hidden max-w-[1100px] px-5 py-6 md:block md:px-7">
       <h1 className="text-[22px] font-bold tracking-tight text-ink">
         Bienvenue, {firstName} <span aria-hidden>👋</span>
       </h1>
@@ -33,7 +37,7 @@ export default async function AccueilPage() {
         <Card>
           <CardHeader title="Prochaines réunions" action={<SeeAllLink href="/reunions" />} />
           <ul className="divide-y divide-hairline border-t border-hairline">
-            {meetings.map((m) => (
+            {meetings.slice(0, 3).map((m) => (
               <li key={m.id} className="flex items-center gap-3 px-4 py-3">
                 <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
                   <Calendar size={15} />
@@ -92,6 +96,7 @@ export default async function AccueilPage() {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

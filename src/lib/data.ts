@@ -1,4 +1,5 @@
 import "server-only";
+import type { Accent } from "@/lib/whiteboard";
 
 /**
  * Couche de lecture du dashboard.
@@ -12,7 +13,11 @@ export type UpcomingMeeting = {
   id: string;
   code: string;
   title: string;
+  /** Libelle long du dashboard PC : "Aujourd'hui · 10:00 - 11:00". */
   when: string;
+  /** Libelle court du mobile : "Aujourd'hui · 10:00". */
+  whenShort: string;
+  accent: Accent;
 };
 
 export type Recording = {
@@ -31,14 +36,23 @@ export type VideoMessage = {
   unread: number;
 };
 
+/**
+ * Un seul calendrier alimente les deux surfaces : le dashboard PC en montre
+ * 3 (il a un "Voir tout"), le mobile les 4 (il a "Voir tout le calendrier").
+ * Les horaires sont ceux des deux ecrans du mockup, qui concordent.
+ */
+const MEETINGS: UpcomingMeeting[] = [
+  { id: "m1", code: "equipe-hebdo", title: "Réunion d'équipe", when: "Aujourd'hui · 10:00 - 11:00", whenShort: "Aujourd'hui · 10:00", accent: "blue" },
+  { id: "m2", code: "point-marketing", title: "Point marketing", when: "Aujourd'hui · 14:00 - 15:00", whenShort: "Aujourd'hui · 14:00", accent: "green" },
+  { id: "m3", code: "revue-produit", title: "Revue produit", when: "Demain · 09:30 - 10:30", whenShort: "Demain · 09:30", accent: "orange" },
+  { id: "m4", code: "retro-sprint", title: "Rétrospective sprint", when: "Vendredi · 11:00 - 12:00", whenShort: "Vendredi · 11:00", accent: "violet" },
+];
+
 export async function getUpcomingMeetings(
   _userId: string,
+  limit = MEETINGS.length,
 ): Promise<UpcomingMeeting[]> {
-  return [
-    { id: "m1", code: "equipe-hebdo", title: "Réunion d'équipe", when: "Aujourd'hui · 10:00 - 11:00" },
-    { id: "m2", code: "point-marketing", title: "Point marketing", when: "Aujourd'hui · 14:00 - 15:00" },
-    { id: "m3", code: "revue-produit", title: "Revue produit", when: "Demain · 09:30 - 10:30" },
-  ];
+  return MEETINGS.slice(0, limit);
 }
 
 export async function getRecentRecordings(_userId: string): Promise<Recording[]> {

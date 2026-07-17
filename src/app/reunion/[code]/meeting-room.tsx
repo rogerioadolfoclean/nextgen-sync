@@ -23,6 +23,7 @@ import { VideoTile } from "@/components/stage/video-tile";
 import { Whiteboard } from "@/components/stage/whiteboard";
 import { ChatPanel, type ChatMessage } from "@/components/stage/chat-panel";
 import { Elapsed } from "@/components/stage/elapsed";
+import { MobileCall } from "@/components/stage/mobile-call";
 
 export function MeetingRoom({ meeting }: { meeting: Meeting }) {
   const router = useRouter();
@@ -88,7 +89,10 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
   };
 
   return (
-    <div className="flex h-dvh flex-col bg-stage">
+    <>
+      <MobileCall meeting={meeting} />
+
+      <div className="hidden h-dvh flex-col bg-stage md:flex">
       <header className="relative flex h-[42px] shrink-0 items-center px-3">
         <span className="hidden text-[11px] font-medium text-white/45 sm:block">
           {meeting.code}
@@ -172,6 +176,7 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
       </div>
 
       <ControlBar controls={controls} compact className="shrink-0" />
-    </div>
+      </div>
+    </>
   );
 }
