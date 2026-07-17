@@ -24,6 +24,7 @@ import { Whiteboard } from "@/components/stage/whiteboard";
 import { ChatPanel, type ChatMessage } from "@/components/stage/chat-panel";
 import { Elapsed } from "@/components/stage/elapsed";
 import { MobileCall } from "@/components/stage/mobile-call";
+import { LiveCaptions } from "@/components/stage/captions";
 import { useLiveKit } from "@/lib/use-livekit";
 
 export function MeetingRoom({ meeting }: { meeting: Meeting }) {
@@ -38,6 +39,7 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
   const [localShare, setLocalShare] = useState(true);
   const [showStrip, setShowStrip] = useState(true);
   const [showChat, setShowChat] = useState(true);
+  const [showCaptions, setShowCaptions] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>(meeting.messages);
 
   const micOn = lk.enabled ? lk.micOn : localMic;
@@ -138,10 +140,21 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
         </div>
 
         <div className="z-10 ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            title="Sous-titres IA"
+            aria-label="Sous-titres IA"
+            aria-pressed={showCaptions}
+            onClick={() => setShowCaptions((v) => !v)}
+            className={`grid size-7 place-items-center rounded-lg transition-colors hover:bg-white/10 hover:text-white ${
+              showCaptions ? "bg-accent-green text-white" : "text-white/85"
+            }`}
+          >
+            <Captions size={15} />
+          </button>
           {[
             { icon: Layers, label: "Disposition" },
             { icon: ShieldCheck, label: "Sécurité" },
-            { icon: Captions, label: "Sous-titres IA" },
             { icon: Video, label: "Enregistrer" },
           ].map(({ icon: Icon, label }) => (
             <button
@@ -199,7 +212,14 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
       )}
 
       <div className="flex min-h-0 flex-1 overflow-hidden rounded-t-xl bg-surface">
-        <Whiteboard initial={meeting.board} className="min-w-0 flex-1" />
+        <div className="relative min-w-0 flex-1">
+          <Whiteboard initial={meeting.board} className="size-full" />
+          {showCaptions && (
+            <div className="pointer-events-none absolute inset-x-4 bottom-4 flex justify-center">
+              <LiveCaptions onClose={() => setShowCaptions(false)} />
+            </div>
+          )}
+        </div>
         {showChat && (
           <ChatPanel
             messages={messages}

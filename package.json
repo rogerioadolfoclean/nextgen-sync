@@ -11,6 +11,7 @@
     "db:seed": "node db/seed.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.1",
     "@livekit/components-react": "^2.9.23",
     "@livekit/components-styles": "^1.2.0",
     "bcryptjs": "^3.0.3",
