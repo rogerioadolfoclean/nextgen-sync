@@ -30,15 +30,17 @@ function demoMeeting(code: string): Meeting | null {
     "revue-produit": { title: "Revue produit", elapsed: 0 },
     "retro-sprint": { title: "Rétrospective sprint", elapsed: 0 },
   };
-  const found = known[code];
-  if (!found) return null;
+  // Une reunion instantanee ou rejointe par code ("nouvelle reunion",
+  // "rejoindre") demarre une salle vide plutot qu'un 404.
+  const instant = !known[code];
+  const found = known[code] ?? { title: "Réunion instantanée", elapsed: 0 };
 
   return {
     code,
     title: found.title,
     elapsedSeconds: found.elapsed,
-    participantCount: 12,
-    chatUnread: 3,
+    participantCount: instant ? 1 : 12,
+    chatUnread: instant ? 0 : 3,
     participants: [
       { id: "u1", name: "Sarah", muted: false },
       { id: "u2", name: "Marc", muted: false },

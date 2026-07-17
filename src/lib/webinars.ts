@@ -17,6 +17,15 @@ export type Webinar = {
   chatUnread: number;
 };
 
+/** Resume pour la liste des webinaires. */
+export type WebinarSummary = {
+  code: string;
+  title: string;
+  live: boolean;
+  participantCount: number;
+  when: string;
+};
+
 /**
  * Contenu du mockup, servi tant que la base n'est pas branchee.
  */
@@ -51,6 +60,43 @@ function demoWebinar(code: string): Webinar | null {
       ],
     },
   };
+}
+
+/** Liste des webinaires (mode demo : celui du mockup + un a venir). */
+export async function listWebinars(): Promise<WebinarSummary[]> {
+  if (!hasDatabase) {
+    return [
+      { code: "avenir-du-travail", title: "Webinaire : L'avenir du travail", live: true, participantCount: 786, when: "En direct maintenant" },
+      { code: "ia-collaboration", title: "IA & Collaboration en entreprise", live: false, participantCount: 0, when: "Jeudi · 15:00" },
+    ];
+  }
+
+  const rows = await query<{
+    code: string;
+    title: string;
+    status: string;
+    scheduled_at: Date | null;
+  }>(
+    `SELECT code, title, status, scheduled_at FROM meetings
+      WHERE kind = 'webinar' ORDER BY status = 'live' DESC, COALESCE(scheduled_at, created_at)`,
+  );
+
+  return rows.map((r) => ({
+    code: r.code,
+    title: r.title,
+    live: r.status === "live",
+    participantCount: 0,
+    when:
+      r.status === "live"
+        ? "En direct maintenant"
+        : r.scheduled_at
+          ? new Date(r.scheduled_at).toLocaleString("fr-FR", {
+              weekday: "long",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "À planifier",
+  }));
 }
 
 /**

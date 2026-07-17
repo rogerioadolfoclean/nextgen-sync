@@ -133,6 +133,22 @@ export async function getRecentRecordings(userId: string): Promise<Recording[]> 
   }));
 }
 
+export async function getRecording(
+  userId: string,
+  id: string,
+): Promise<Recording | null> {
+  const all = await getRecentRecordings(userId);
+  return all.find((r) => r.id === id) ?? null;
+}
+
+export async function getVideoMessage(
+  userId: string,
+  id: string,
+): Promise<VideoMessage | null> {
+  const all = await getVideoMessages(userId);
+  return all.find((v) => v.id === id) ?? null;
+}
+
 export async function getVideoMessages(userId: string): Promise<VideoMessage[]> {
   if (!hasDatabase) {
     return [
