@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import {
   ArrowLeft,
   Mic,
@@ -19,12 +18,32 @@ import { VideoTile } from "./video-tile";
 import { Elapsed } from "./elapsed";
 import { Avatar } from "@/components/avatar";
 
+/**
+ * Etat de la barre de controle, partage avec la vue bureau via le parent pour
+ * ne pas ouvrir une seconde connexion LiveKit sur la meme salle.
+ */
+export type CallControls = {
+  micOn: boolean;
+  camOn: boolean;
+  sharing: boolean;
+  toggleMic: () => void;
+  toggleCam: () => void;
+  toggleShare: () => void;
+  /** Flux temps reel local (sa propre camera), si LiveKit est actif. */
+  localStream?: MediaStream | null;
+  /** Flux de l'orateur principal, si LiveKit est actif. */
+  speakerStream?: MediaStream | null;
+};
+
 /** Ecran "Appel vidéo en cours" du mockup mobile. */
-export function MobileCall({ meeting }: { meeting: Meeting }) {
+export function MobileCall({
+  meeting,
+  controls: c,
+}: {
+  meeting: Meeting;
+  controls: CallControls;
+}) {
   const router = useRouter();
-  const [micOn, setMicOn] = useState(true);
-  const [camOn, setCamOn] = useState(true);
-  const [sharing, setSharing] = useState(true);
 
   const speaker = meeting.participants[0];
   const self = meeting.participants[1] ?? speaker;
@@ -33,24 +52,24 @@ export function MobileCall({ meeting }: { meeting: Meeting }) {
   const controls: Control[] = [
     {
       key: "micro",
-      icon: micOn ? Mic : MicOff,
+      icon: c.micOn ? Mic : MicOff,
       label: "Micro",
-      tone: micOn ? "default" : "off",
-      onClick: () => setMicOn((v) => !v),
+      tone: c.micOn ? "default" : "off",
+      onClick: c.toggleMic,
     },
     {
       key: "camera",
-      icon: camOn ? Video : VideoOff,
+      icon: c.camOn ? Video : VideoOff,
       label: "Caméra",
-      tone: camOn ? "default" : "off",
-      onClick: () => setCamOn((v) => !v),
+      tone: c.camOn ? "default" : "off",
+      onClick: c.toggleCam,
     },
     {
       key: "partager",
       icon: MonitorUp,
       label: "Partager",
-      tone: sharing ? "active" : "default",
-      onClick: () => setSharing((v) => !v),
+      tone: c.sharing ? "active" : "default",
+      onClick: c.toggleShare,
     },
     { key: "participants", icon: Users, label: "Participants" },
     { key: "plus", icon: Ellipsis, label: "Plus" },
@@ -87,7 +106,12 @@ export function MobileCall({ meeting }: { meeting: Meeting }) {
 
       <div className="relative min-h-0 flex-1">
         <VideoTile
-          participant={{ id: speaker.id, name: speaker.name, avatarUrl: speaker.avatarUrl }}
+          participant={{
+            id: speaker.id,
+            name: speaker.name,
+            avatarUrl: speaker.avatarUrl,
+            stream: c.speakerStream ?? undefined,
+          }}
           className="size-full"
           rounded="rounded-none"
           showName={false}
@@ -109,7 +133,12 @@ export function MobileCall({ meeting }: { meeting: Meeting }) {
             conteneur, sinon les deux regles de position se marchent dessus. */}
         <div className="absolute right-3 bottom-3 h-[124px] w-[92px]">
           <VideoTile
-            participant={{ id: self.id, name: self.name, avatarUrl: self.avatarUrl }}
+            participant={{
+              id: self.id,
+              name: self.name,
+              avatarUrl: self.avatarUrl,
+              stream: c.localStream ?? undefined,
+            }}
             className="size-full shadow-xl ring-1 ring-white/15"
             rounded="rounded-xl"
             showName={false}
@@ -121,8 +150,8 @@ export function MobileCall({ meeting }: { meeting: Meeting }) {
 
       <div className="shrink-0 bg-stage pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-start justify-between px-5 pt-3">
-          {controls.map(({ key, ...c }) => (
-            <ControlButton key={key} {...c} round />
+          {controls.map(({ key, ...control }) => (
+            <ControlButton key={key} {...control} round />
           ))}
         </div>
         <div className="flex justify-center py-3">

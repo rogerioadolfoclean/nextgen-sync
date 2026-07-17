@@ -24,15 +24,32 @@ import { Whiteboard } from "@/components/stage/whiteboard";
 import { ChatPanel, type ChatMessage } from "@/components/stage/chat-panel";
 import { Elapsed } from "@/components/stage/elapsed";
 import { MobileCall } from "@/components/stage/mobile-call";
+import { useLiveKit } from "@/lib/use-livekit";
 
 export function MeetingRoom({ meeting }: { meeting: Meeting }) {
   const router = useRouter();
-  const [micOn, setMicOn] = useState(true);
-  const [camOn, setCamOn] = useState(true);
-  const [sharing, setSharing] = useState(true);
+
+  // Vraie visio quand les cles LiveKit sont presentes ; sinon `enabled` reste
+  // false et l'affichage demo (avatars + etat local) est conserve tel quel.
+  const lk = useLiveKit(meeting.code, "host");
+
+  const [localMic, setLocalMic] = useState(true);
+  const [localCam, setLocalCam] = useState(true);
+  const [localShare, setLocalShare] = useState(true);
   const [showStrip, setShowStrip] = useState(true);
   const [showChat, setShowChat] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>(meeting.messages);
+
+  const micOn = lk.enabled ? lk.micOn : localMic;
+  const camOn = lk.enabled ? lk.camOn : localCam;
+  const sharing = lk.enabled ? lk.sharing : localShare;
+  const toggleMic = lk.enabled ? lk.toggleMic : () => setLocalMic((v) => !v);
+  const toggleCam = lk.enabled ? lk.toggleCam : () => setLocalCam((v) => !v);
+  const toggleShare = lk.enabled ? lk.toggleShare : () => setLocalShare((v) => !v);
+
+  /** Flux temps reel d'un participant, ou undefined en mode demo. */
+  const streamFor = (index: number) =>
+    lk.enabled ? (lk.remotes[index]?.stream ?? undefined) : undefined;
 
   const controls: Control[] = [
     {
@@ -40,21 +57,21 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
       icon: micOn ? Mic : MicOff,
       label: "Micro",
       tone: micOn ? "default" : "off",
-      onClick: () => setMicOn((v) => !v),
+      onClick: toggleMic,
     },
     {
       key: "camera",
       icon: camOn ? Video : VideoOff,
       label: "Caméra",
       tone: camOn ? "default" : "off",
-      onClick: () => setCamOn((v) => !v),
+      onClick: toggleCam,
     },
     {
       key: "partager",
       icon: MonitorUp,
       label: "Partager",
       tone: sharing ? "active" : "default",
-      onClick: () => setSharing((v) => !v),
+      onClick: toggleShare,
     },
     {
       key: "participants",
@@ -90,7 +107,19 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
 
   return (
     <>
-      <MobileCall meeting={meeting} />
+      <MobileCall
+        meeting={meeting}
+        controls={{
+          micOn,
+          camOn,
+          sharing,
+          toggleMic,
+          toggleCam,
+          toggleShare,
+          localStream: lk.enabled ? lk.localStream : null,
+          speakerStream: lk.enabled ? (lk.remotes[0]?.stream ?? null) : null,
+        }}
+      />
 
       <div className="hidden h-dvh flex-col bg-stage md:flex">
       <header className="relative flex h-[42px] shrink-0 items-center px-3">
@@ -137,13 +166,19 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
 
       {showStrip && (
         <div className="flex shrink-0 items-center gap-1.5 px-2 pb-2">
-          {meeting.participants.map((p) => (
+          {meeting.participants.map((p, i) => (
             <div
               key={p.id}
               className="relative w-[104px] shrink-0 sm:w-[132px] lg:w-[158px]"
             >
               <VideoTile
-                participant={{ id: p.id, name: p.name, avatarUrl: p.avatarUrl, muted: p.muted }}
+                participant={{
+                  id: p.id,
+                  name: p.name,
+                  avatarUrl: p.avatarUrl,
+                  muted: p.muted,
+                  stream: streamFor(i),
+                }}
                 className="aspect-[7/5] w-full"
                 avatarSize={34}
               />
