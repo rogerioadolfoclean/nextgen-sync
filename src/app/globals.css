@@ -20,6 +20,9 @@
   /* Barres haut/bas en reunion (tablette + PC) */
   --color-stage: #111923;
   --color-stage-bar: #12181d;
+  /* Fond d'une vignette : plus clair que la barre, pour que le cadre reste
+     lisible quand la camera est coupee et qu'on retombe sur l'avatar. */
+  --color-tile: #1e2733;
 
   /* Surfaces */
   --color-canvas: #f9f9fb;
@@ -50,6 +53,7 @@
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", sans-serif;
+  --font-hand: var(--font-caveat), "Segoe Script", cursive;
 
   --radius-card: 0.875rem;
 }
