@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/* ============================================================
+   NextGen Sync — Design System
+   Couleurs echantillonnees au pixel depuis le mockup de reference
+   "Visioconference Priorite ok.png" (1536x1024)
+   ============================================================ */
+
+@theme {
+  /* Bleu primaire — boutons Nouvelle reunion / Inviter / Rejoindre */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-soft: #eff4ff;
+
+  /* Sidebar navy du site web PC */
+  --color-navy: #111a27;
+  --color-navy-pill: #344d7b;
+  --color-navy-muted: #8a94a6;
+
+  /* Barres haut/bas en reunion (tablette + PC) */
+  --color-stage: #111923;
+  --color-stage-bar: #12181d;
+
+  /* Surfaces */
+  --color-canvas: #f9f9fb;
+  --color-surface: #ffffff;
+  --color-hairline: #e8eaee;
+
+  /* Rouge — raccrocher, badge EN DIRECT, pastilles de notification */
+  --color-danger: #e4433a;
+  --color-danger-hover: #cf3830;
+
+  /* Les 6 accents des fonctionnalites cles */
+  --color-accent-blue: #3b6cf8;
+  --color-accent-green: #41c069;
+  --color-accent-violet: #6f5ad9;
+  --color-accent-orange: #f79a2b;
+  --color-accent-rose: #ec6d85;
+  --color-accent-teal: #30b3b8;
+
+  /* Teintes claires des cartes du tableau blanc */
+  --color-tint-blue: #f2f6ff;
+  --color-tint-green: #f1fbf4;
+  --color-tint-violet: #f6f4fe;
+  --color-tint-orange: #fff8ef;
+
+  /* Texte */
+  --color-ink: #101828;
+  --color-ink-soft: #667085;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+
+  --radius-card: 0.875rem;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Le mockup ne comporte pas de variante sombre : on verrouille le rendu clair
+   pour que l'interface reste conforme quel que soit le theme de l'appareil. */
+:root {
+  color-scheme: light;
+}
+
+/* Masque les scrollbars des zones defilantes (listes, chat, participants)
+   comme sur le mockup, sans desactiver le defilement. */
+.scroll-clean {
+  scrollbar-width: thin;
+  scrollbar-color: #d5d9e0 transparent;
+}
+.scroll-clean::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-clean::-webkit-scrollbar-thumb {
+  background: #d5d9e0;
+  border-radius: 9999px;
+}
+.scroll-clean::-webkit-scrollbar-track {
+  background: transparent;
+}

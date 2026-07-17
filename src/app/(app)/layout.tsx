@@ -1,0 +1,23 @@
+import { Sidebar } from "@/components/sidebar";
+import { TopBar } from "@/components/topbar";
+import { getSessionUser } from "@/lib/session";
+
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const user = await getSessionUser();
+
+  return (
+    <div className="flex h-dvh overflow-hidden bg-canvas">
+      <div className="hidden md:flex">
+        <Sidebar user={{ name: user.name, role: user.role, avatarUrl: user.avatarUrl }} />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar unread={user.unreadCount} />
+        <main className="scroll-clean flex-1 overflow-y-auto">{children}</main>
+      </div>
+    </div>
+  );
+}
