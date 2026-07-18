@@ -24,7 +24,7 @@ export const PLANS: Plan[] = [
     tagline: "Pour découvrir la plateforme.",
     features: [
       "Réunions jusqu'à 40 minutes",
-      "100 participants",
+      "Jusqu'à 100 participants par réunion",
       "Tableau blanc collaboratif",
       "Chat intégré",
     ],
@@ -32,12 +32,12 @@ export const PLANS: Plan[] = [
   {
     id: "pro",
     name: "Pro",
-    price: 12,
+    price: 8,
     tagline: "Pour les équipes qui collaborent au quotidien.",
     highlighted: true,
     features: [
       "Réunions illimitées",
-      "500 participants",
+      "Jusqu'à 300 participants par réunion",
       "Sous-titres & traduction IA",
       "Enregistrements dans le cloud",
       "Sondages & analytique",
@@ -46,10 +46,10 @@ export const PLANS: Plan[] = [
   {
     id: "enterprise",
     name: "Enterprise",
-    price: 29,
+    price: 19.99,
     tagline: "Sécurité et échelle pour l'organisation.",
     features: [
-      "Jusqu'à 100 000 participants",
+      "Jusqu'à 1 000 participants par réunion",
       "Webinaires & salles de sous-groupes",
       "Compte rendu IA automatique",
       "Chiffrement E2E, RGPD / HIPAA",

@@ -60,7 +60,11 @@ export function PricingCards() {
 
             <p className="mt-4 flex items-baseline gap-1">
               <span className="text-[32px] font-bold tracking-tight text-ink">
-                {plan.price === 0 ? "0 €" : `${plan.price} €`}
+                {plan.price === 0
+                  ? "0 €"
+                  : `${plan.price.toLocaleString("fr-FR", {
+                      minimumFractionDigits: Number.isInteger(plan.price) ? 0 : 2,
+                    })} €`}
               </span>
               <span className="text-[12.5px] text-ink-soft">/ mois</span>
             </p>
