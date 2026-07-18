@@ -1,4 +1,5 @@
-import { Search, Bell, CircleQuestionMark, UserPlus } from "lucide-react";
+import { Search, Bell, CircleQuestionMark } from "lucide-react";
+import { InviteButton } from "@/components/invite-button";
 
 export function TopBar({ unread = 0 }: { unread?: number }) {
   return (
@@ -37,13 +38,7 @@ export function TopBar({ unread = 0 }: { unread?: number }) {
         <CircleQuestionMark size={17} />
       </button>
 
-      <button
-        type="button"
-        className="flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-primary-hover"
-      >
-        <UserPlus size={14} />
-        Inviter
-      </button>
+      <InviteButton />
     </header>
   );
 }

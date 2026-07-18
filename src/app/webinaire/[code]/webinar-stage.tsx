@@ -20,6 +20,7 @@ import { ParticipantsPanel } from "@/components/stage/participants-panel";
 import { PollPanel } from "@/components/stage/poll-panel";
 import { Elapsed } from "@/components/stage/elapsed";
 import { useLiveKit } from "@/lib/use-livekit";
+import { useLocalCamera } from "@/lib/use-local-camera";
 
 export function WebinarStage({ webinar }: { webinar: Webinar }) {
   const router = useRouter();
@@ -36,6 +37,10 @@ export function WebinarStage({ webinar }: { webinar: Webinar }) {
   const toggleMic = lk.enabled ? lk.toggleMic : () => setLocalMic((v) => !v);
   const toggleCam = lk.enabled ? lk.toggleCam : () => setLocalCam((v) => !v);
   const toggleShare = lk.enabled ? lk.toggleShare : () => setLocalShare((v) => !v);
+
+  // Sans LiveKit, on ouvre quand meme la vraie webcam pour l'orateur (moi, hote).
+  const localCamera = useLocalCamera(!lk.enabled && camOn);
+  const speakerStream = lk.enabled ? lk.localStream : localCamera.stream;
 
   const speaker = webinar.participants[0];
   const strip = webinar.participants.slice(1, 5);
@@ -102,13 +107,13 @@ export function WebinarStage({ webinar }: { webinar: Webinar }) {
               id: speaker.id,
               name: speaker.name,
               avatarUrl: speaker.avatarUrl,
-              stream: lk.enabled ? (lk.localStream ?? undefined) : undefined,
+              stream: speakerStream ?? undefined,
             }}
             className="size-full"
             rounded="rounded-none"
             showName={false}
             avatarSize={96}
-            mirror={lk.enabled}
+            mirror={Boolean(speakerStream)}
           />
 
           <div className="absolute right-3 bottom-3 left-3 flex justify-center gap-2">

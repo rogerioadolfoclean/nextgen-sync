@@ -26,6 +26,7 @@ import { Elapsed } from "@/components/stage/elapsed";
 import { MobileCall } from "@/components/stage/mobile-call";
 import { LiveCaptions } from "@/components/stage/captions";
 import { useLiveKit } from "@/lib/use-livekit";
+import { useLocalCamera } from "@/lib/use-local-camera";
 
 export function MeetingRoom({ meeting }: { meeting: Meeting }) {
   const router = useRouter();
@@ -49,9 +50,17 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
   const toggleCam = lk.enabled ? lk.toggleCam : () => setLocalCam((v) => !v);
   const toggleShare = lk.enabled ? lk.toggleShare : () => setLocalShare((v) => !v);
 
-  /** Flux temps reel d'un participant, ou undefined en mode demo. */
+  // Sans LiveKit, on ouvre quand meme la vraie webcam pour la vignette "moi".
+  const localCamera = useLocalCamera(!lk.enabled && camOn);
+  const selfStream = lk.enabled ? lk.localStream : localCamera.stream;
+
+  /** Flux d'un participant : ma webcam pour la 1re vignette (moi), sinon LiveKit. */
   const streamFor = (index: number) =>
-    lk.enabled ? (lk.remotes[index]?.stream ?? undefined) : undefined;
+    index === 0
+      ? (selfStream ?? undefined)
+      : lk.enabled
+        ? (lk.remotes[index - 1]?.stream ?? undefined)
+        : undefined;
 
   const controls: Control[] = [
     {
@@ -118,7 +127,7 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
           toggleMic,
           toggleCam,
           toggleShare,
-          localStream: lk.enabled ? lk.localStream : null,
+          localStream: selfStream,
           speakerStream: lk.enabled ? (lk.remotes[0]?.stream ?? null) : null,
         }}
       />
@@ -187,13 +196,14 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
               <VideoTile
                 participant={{
                   id: p.id,
-                  name: p.name,
+                  name: i === 0 ? `${p.name} (moi)` : p.name,
                   avatarUrl: p.avatarUrl,
                   muted: p.muted,
                   stream: streamFor(i),
                 }}
                 className="aspect-[7/5] w-full"
                 avatarSize={34}
+                mirror={i === 0}
               />
               <span className="absolute top-1.5 right-1.5 grid size-4 place-items-center rounded bg-black/45">
                 <Mic size={9} className="text-accent-green" />
