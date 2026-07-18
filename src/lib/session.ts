@@ -44,8 +44,9 @@ export async function getSessionUser(): Promise<SessionUser> {
       email: string;
       role: string;
       avatar_url: string | null;
+      plan: string;
     }>(
-      "SELECT id, name, email, role, avatar_url FROM users ORDER BY created_at LIMIT 1",
+      "SELECT id, name, email, role, avatar_url, plan FROM users ORDER BY created_at LIMIT 1",
     );
     user = vitrine[0] ?? null;
   }
