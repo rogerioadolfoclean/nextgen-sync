@@ -39,7 +39,7 @@ export const POST = apiRoute(async (req: NextRequest, ctx: ApiContext) => {
   const status = scheduled_at ? "scheduled" : "live";
   const rows = await pool!.query(
     `INSERT INTO meetings (code, title, host_id, kind, status, scheduled_at, started_at, waiting_room)
-     VALUES ($1,$2,$3,$4,$5,$6, CASE WHEN $6 IS NULL THEN now() ELSE NULL END, $7)
+     VALUES ($1,$2,$3,$4,$5,$6::timestamptz, CASE WHEN $6::timestamptz IS NULL THEN now() ELSE NULL END, $7)
      RETURNING id, code, title, kind, status, scheduled_at, created_at`,
     [code, title, ctx.ownerId, kind, status, scheduled_at, waiting_room]
   );
