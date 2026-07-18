@@ -31,7 +31,24 @@ const DEMO_USER: SessionUser = {
 export async function getSessionUser(): Promise<SessionUser> {
   if (!hasDatabase) return DEMO_USER;
 
-  const user = await getCurrentUser();
+  let user = await getCurrentUser();
+
+  // Pas de session connectée : on utilise le compte vitrine (premier compte réel,
+  // créé au seed), qui possède le contenu de démonstration. Son id est un vrai
+  // UUID — indispensable pour les requêtes SQL suivantes (contrairement à la
+  // persona factice « demo-sarah »).
+  if (!user) {
+    const vitrine = await query<{
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      avatar_url: string | null;
+    }>(
+      "SELECT id, name, email, role, avatar_url FROM users ORDER BY created_at LIMIT 1",
+    );
+    user = vitrine[0] ?? null;
+  }
   if (!user) return DEMO_USER;
 
   const rows = await query<{ n: string }>(
