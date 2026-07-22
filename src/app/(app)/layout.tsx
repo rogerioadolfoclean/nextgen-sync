@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/topbar";
 import { MobileTabBar } from "@/components/mobile-tabbar";
 import { getSessionUser } from "@/lib/session";
+import { IdentityGate } from "@/components/identity-gate";
 
 export default async function AppLayout({
   children,
@@ -11,6 +12,7 @@ export default async function AppLayout({
   const user = await getSessionUser();
 
   return (
+    <IdentityGate>
     <div className="flex h-dvh overflow-hidden bg-canvas">
       <div className="hidden md:flex">
         <Sidebar
@@ -29,5 +31,6 @@ export default async function AppLayout({
         <MobileTabBar />
       </div>
     </div>
+    </IdentityGate>
   );
 }
