@@ -27,7 +27,7 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
   const router = useRouter();
   const identity = useIdentity();
   const realName = identity?.fullName ?? "Participant";
-  const lk = useLiveKit(meeting.code, "host");
+  const lk = useLiveKit(meeting.code, "host", realName, identity?.id);
 
   // Contrôles A/V (LiveKit si dispo, sinon état local + vraie webcam pour "moi").
   const [localMic, setLocalMic] = useState(true);
