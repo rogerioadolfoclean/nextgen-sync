@@ -5,7 +5,7 @@ import { useState } from "react";
 import {
   Mic, MicOff, Video, VideoOff, MonitorUp, Users, MessageSquare, Smile,
   Ellipsis, Layers, ShieldCheck, Captions, X, Hand, Circle, PenLine,
-  Image as ImageIcon, Grid3x3, Square, LayoutGrid, Link2, Check, BarChart3, UsersRound,
+  Image as ImageIcon, Grid3x3, Square, LayoutGrid, Link2, Check, BarChart3, UsersRound, Sparkles,
 } from "lucide-react";
 import type { Meeting } from "@/lib/meetings";
 import { ControlBar, type Control } from "@/components/stage/control-bar";
@@ -20,6 +20,7 @@ import { ReactionsBar, FlyingReactions, useFlyingReactions } from "@/components/
 import { useLiveKit } from "@/lib/use-livekit";
 import { useLocalCamera } from "@/lib/use-local-camera";
 import { useIdentity } from "@/components/identity-gate";
+import { AiCopilotPanel } from "@/components/stage/ai-copilot-panel";
 
 type Layout = "galerie" | "intervenant" | "tableau";
 
@@ -45,6 +46,7 @@ export function MeetingRoom({ meeting, initialMicOn = true, initialCamOn = true 
   // Panneaux & fonctionnalités
   const [showChat, setShowChat] = useState(true);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [showAI, setShowAI] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
   const [showReactions, setShowReactions] = useState(false);
   const [handRaised, setHandRaised] = useState(false);
@@ -95,8 +97,9 @@ export function MeetingRoom({ meeting, initialMicOn = true, initialCamOn = true 
     { key: "micro", icon: micOn ? Mic : MicOff, label: "Micro", tone: micOn ? "default" : "off", onClick: toggleMic },
     { key: "camera", icon: camOn ? Video : VideoOff, label: "Caméra", tone: camOn ? "default" : "off", onClick: toggleCam },
     { key: "partager", icon: MonitorUp, label: "Partager", tone: sharing ? "active" : "default", onClick: toggleShare },
-    { key: "participants", icon: Users, label: "Participants", badge: people.length, tone: showParticipants ? "active" : "default", onClick: () => { setShowParticipants((v) => !v); setShowChat(false); } },
-    { key: "chat", icon: MessageSquare, label: "Chat", tone: showChat ? "active" : "default", onClick: () => { if (!chatAllowed) return; setShowChat((v) => !v); } },
+    { key: "participants", icon: Users, label: "Participants", badge: people.length, tone: showParticipants ? "active" : "default", onClick: () => { setShowParticipants((v) => !v); setShowChat(false); setShowAI(false); } },
+    { key: "chat", icon: MessageSquare, label: "Chat", tone: showChat ? "active" : "default", onClick: () => { if (!chatAllowed) return; setShowChat((v) => !v); setShowAI(false); setShowParticipants(false); } },
+    { key: "ia", icon: Sparkles, label: "Copilote IA", tone: showAI ? "active" : "default", onClick: () => { setShowAI((v) => !v); setShowChat(false); setShowParticipants(false); } },
     { key: "main", icon: Hand, label: "Main", tone: handRaised ? "active" : "default", onClick: raiseHand },
     { key: "reactions", icon: Smile, label: "Réactions", tone: showReactions ? "active" : "default", onClick: () => setShowReactions((v) => !v) },
     { key: "plus", icon: Ellipsis, label: "Plus", tone: menu === "more" ? "active" : "default", onClick: () => setMenu(menu === "more" ? null : "more") },
@@ -216,8 +219,14 @@ export function MeetingRoom({ meeting, initialMicOn = true, initialCamOn = true 
             />
           )}
 
-          {showChat && chatAllowed && !showParticipants && (
+          {showChat && chatAllowed && !showParticipants && !showAI && (
             <ChatPanel messages={messages} onSend={send} onClose={() => setShowChat(false)} className="hidden w-[248px] shrink-0 md:flex" />
+          )}
+          {showAI && (
+            <AiCopilotPanel
+              context={[`Réunion : ${meeting.title}`, ...messages.map((m) => `${m.author}: ${m.text}`)].join("\n")}
+              onClose={() => setShowAI(false)}
+            />
           )}
         </div>
 
