@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   ArrowLeft,
   Mic,
@@ -17,6 +18,7 @@ import { ControlButton, HangUpButton, type Control } from "./control-bar";
 import { VideoTile } from "./video-tile";
 import { Elapsed } from "./elapsed";
 import { Avatar } from "@/components/avatar";
+import { AudioLevelMeter } from "./audio-level-meter";
 
 /**
  * Etat de la barre de controle, partage avec la vue bureau via le parent pour
@@ -39,15 +41,39 @@ export type CallControls = {
 export function MobileCall({
   meeting,
   controls: c,
+  participants,
+  audioLevel,
+  liveStatus,
 }: {
   meeting: Meeting;
   controls: CallControls;
+  participants: Array<{ id: string; name: string; avatarUrl?: string | null; isSelf?: boolean }>;
+  audioLevel: number;
+  liveStatus: "transmis" | "connexion" | "non-configure";
 }) {
   const router = useRouter();
+  const [sheet, setSheet] = useState<"participants" | "more" | null>(null);
+  const [cameraMessage, setCameraMessage] = useState("");
 
-  const speaker = meeting.participants[0];
-  const self = meeting.participants[1] ?? speaker;
-  const third = meeting.participants[2];
+  const self = participants.find((p) => p.isSelf) ?? participants[0];
+  const speaker = participants.find((p) => !p.isSelf) ?? self;
+  const third = participants.filter((p) => !p.isSelf)[1];
+
+  const switchCamera = async () => {
+    const track = c.localStream?.getVideoTracks()[0];
+    if (!track) {
+      setCameraMessage("Activez d’abord la caméra.");
+      return;
+    }
+    const current = track.getSettings().facingMode;
+    try {
+      await track.applyConstraints({ facingMode: current === "environment" ? "user" : "environment" });
+      setCameraMessage("Caméra changée");
+    } catch {
+      setCameraMessage("Une seule caméra est disponible sur cet appareil.");
+    }
+    setTimeout(() => setCameraMessage(""), 2200);
+  };
 
   const controls: Control[] = [
     {
@@ -71,8 +97,8 @@ export function MobileCall({
       tone: c.sharing ? "active" : "default",
       onClick: c.toggleShare,
     },
-    { key: "participants", icon: Users, label: "Participants" },
-    { key: "plus", icon: Ellipsis, label: "Plus" },
+    { key: "participants", icon: Users, label: "Participants", badge: participants.length, tone: sheet === "participants" ? "active" : "default", onClick: () => setSheet(sheet === "participants" ? null : "participants") },
+    { key: "plus", icon: Ellipsis, label: "Plus", tone: sheet === "more" ? "active" : "default", onClick: () => setSheet(sheet === "more" ? null : "more") },
   ];
 
   return (
@@ -98,10 +124,12 @@ export function MobileCall({
         <button
           type="button"
           aria-label="Changer de caméra"
+          onClick={switchCamera}
           className="z-10 grid size-9 place-items-center rounded-full bg-white/12 text-white"
         >
           <SwitchCamera size={17} />
         </button>
+        {cameraMessage && <span className="absolute top-14 right-3 z-30 rounded-lg bg-black/75 px-3 py-2 text-xs text-white">{cameraMessage}</span>}
       </header>
 
       <div className="relative min-h-0 flex-1">
@@ -149,6 +177,14 @@ export function MobileCall({
       </div>
 
       <div className="shrink-0 bg-stage pb-[env(safe-area-inset-bottom)]">
+        <div className="px-5 pt-3">
+          <div className="flex items-center gap-3">
+            <AudioLevelMeter level={c.micOn ? audioLevel : 0} />
+            <span className={`shrink-0 text-[10px] font-semibold ${liveStatus === "transmis" ? "text-accent-green" : "text-amber-300"}`}>
+              {liveStatus === "transmis" ? "Audio transmis" : liveStatus === "connexion" ? "Connexion…" : "Non transmis"}
+            </span>
+          </div>
+        </div>
         <div className="flex items-start justify-between px-5 pt-3">
           {controls.map(({ key, ...control }) => (
             <ControlButton key={key} {...control} round />
@@ -158,6 +194,27 @@ export function MobileCall({
           <HangUpButton onClick={() => router.push("/accueil")} size={52} />
         </div>
       </div>
+
+      {sheet && (
+        <div className="absolute inset-x-3 bottom-28 z-40 max-h-[55dvh] overflow-y-auto rounded-2xl bg-white p-4 text-ink shadow-2xl">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-bold">{sheet === "participants" ? `Participants (${participants.length})` : "Plus d’options"}</h2>
+            <button type="button" onClick={() => setSheet(null)} className="rounded-lg bg-canvas px-3 py-1 text-sm">Fermer</button>
+          </div>
+          {sheet === "participants" ? participants.map((p) => (
+            <div key={p.id} className="flex items-center gap-3 border-t border-border py-3 first:border-0">
+              <Avatar name={p.name} src={p.avatarUrl} size={34} />
+              <span className="font-medium">{p.name}</span>
+            </div>
+          )) : (
+            <div className="grid gap-2">
+              <button type="button" onClick={async () => { await navigator.clipboard.writeText(window.location.href); setSheet(null); }} className="rounded-xl bg-canvas p-3 text-left font-semibold">Copier le lien de la réunion</button>
+              <button type="button" onClick={() => { c.toggleShare(); setSheet(null); }} className="rounded-xl bg-canvas p-3 text-left font-semibold">{c.sharing ? "Arrêter le partage" : "Partager l’écran"}</button>
+              <button type="button" onClick={() => router.push("/accueil")} className="rounded-xl bg-red-50 p-3 text-left font-semibold text-danger">Quitter la réunion</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

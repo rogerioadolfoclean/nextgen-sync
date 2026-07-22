@@ -4,10 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Room,
   RoomEvent,
-  Track,
-  type RemoteTrack,
   type RemoteParticipant,
-  type LocalTrackPublication,
 } from "livekit-client";
 
 export type RemoteFeed = {
@@ -27,6 +24,7 @@ export type LiveKitState = {
   micOn: boolean;
   camOn: boolean;
   sharing: boolean;
+  participantCount: number;
   toggleMic: () => void;
   toggleCam: () => void;
   toggleShare: () => void;
@@ -50,6 +48,7 @@ export function useLiveKit(roomCode: string, role: string, displayName?: string,
   const [micOn, setMicOn] = useState(initialMicOn);
   const [camOn, setCamOn] = useState(initialCamOn);
   const [sharing, setSharing] = useState(false);
+  const [participantCount, setParticipantCount] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,36 +59,34 @@ export function useLiveKit(roomCode: string, role: string, displayName?: string,
       const feeds: RemoteFeed[] = [];
       room.remoteParticipants.forEach((p: RemoteParticipant) => {
         const stream = new MediaStream();
-        let hasTrack = false;
         p.trackPublications.forEach((pub) => {
           if (pub.track && pub.isSubscribed) {
             stream.addTrack(pub.track.mediaStreamTrack);
-            hasTrack = true;
           }
         });
-        if (hasTrack) {
-          feeds.push({
-            identity: p.identity,
-            name: p.name || p.identity,
-            stream,
-          });
-        }
+        feeds.push({ identity: p.identity, name: p.name || p.identity, stream });
       });
       setRemotes(feeds);
+      setParticipantCount(room.remoteParticipants.size + 1);
+    };
+
+    const refreshLocalStream = () => {
+      const stream = new MediaStream();
+      room.localParticipant.trackPublications.forEach((pub) => {
+        if (pub.track) stream.addTrack(pub.track.mediaStreamTrack);
+      });
+      setLocalStream(stream.getTracks().length ? stream : null);
     };
 
     room
       .on(RoomEvent.Connected, () => !cancelled && setConnected(true))
       .on(RoomEvent.Disconnected, () => !cancelled && setConnected(false))
-      .on(RoomEvent.TrackSubscribed, (_t: RemoteTrack) => refreshRemotes())
+      .on(RoomEvent.TrackSubscribed, () => refreshRemotes())
       .on(RoomEvent.TrackUnsubscribed, () => refreshRemotes())
       .on(RoomEvent.ParticipantConnected, () => refreshRemotes())
       .on(RoomEvent.ParticipantDisconnected, () => refreshRemotes())
-      .on(RoomEvent.LocalTrackPublished, (pub: LocalTrackPublication) => {
-        if (pub.track?.kind === Track.Kind.Video) {
-          setLocalStream(new MediaStream([pub.track.mediaStreamTrack]));
-        }
-      });
+      .on(RoomEvent.LocalTrackPublished, () => refreshLocalStream())
+      .on(RoomEvent.LocalTrackUnpublished, () => refreshLocalStream());
 
     async function connect() {
       setConnecting(true);
@@ -118,6 +115,7 @@ export function useLiveKit(roomCode: string, role: string, displayName?: string,
         if (canPublish) {
           await room.localParticipant.setCameraEnabled(initialCamOn);
           await room.localParticipant.setMicrophoneEnabled(initialMicOn);
+          refreshLocalStream();
         }
         refreshRemotes();
       } catch (err) {
@@ -172,6 +170,7 @@ export function useLiveKit(roomCode: string, role: string, displayName?: string,
     micOn,
     camOn,
     sharing,
+    participantCount,
     toggleMic,
     toggleCam,
     toggleShare,

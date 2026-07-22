@@ -29,7 +29,7 @@ export function useLocalCamera(active: boolean, withAudio = false): LocalCamera 
       setStream(null);
     }
 
-    if (!active) {
+    if (!active && !withAudio) {
       stop();
       return;
     }
@@ -40,7 +40,7 @@ export function useLocalCamera(active: boolean, withAudio = false): LocalCamera 
     }
 
     navigator.mediaDevices
-      .getUserMedia({ video: true, audio: withAudio })
+      .getUserMedia({ video: active, audio: withAudio })
       .then((s) => {
         if (cancelled) {
           s.getTracks().forEach((t) => t.stop());

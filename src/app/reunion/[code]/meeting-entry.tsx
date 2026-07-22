@@ -7,6 +7,8 @@ import { useIdentity } from "@/components/identity-gate";
 import { useLocalCamera } from "@/lib/use-local-camera";
 import { Avatar } from "@/components/avatar";
 import { MeetingRoom } from "./meeting-room";
+import { useAudioLevel } from "@/lib/use-audio-level";
+import { AudioLevelMeter } from "@/components/stage/audio-level-meter";
 
 export function MeetingEntry({ meeting }: { meeting: Meeting }) {
   const identity = useIdentity();
@@ -14,6 +16,7 @@ export function MeetingEntry({ meeting }: { meeting: Meeting }) {
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const preview = useLocalCamera(camOn, micOn);
+  const audioLevel = useAudioLevel(preview.stream, micOn);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -53,6 +56,16 @@ export function MeetingEntry({ meeting }: { meeting: Meeting }) {
             <button type="button" onClick={() => setCamOn((v) => !v)} className={`flex items-center gap-2 rounded-xl px-5 py-3 font-semibold ${camOn ? "bg-white/10 hover:bg-white/15" : "bg-danger hover:bg-danger-hover"}`}>
               {camOn ? <Video size={19} /> : <VideoOff size={19} />}{camOn ? "Caméra activée" : "Caméra coupée"}
             </button>
+          </div>
+          <div className="mx-auto mt-4 max-w-md rounded-xl bg-white/8 p-4 ring-1 ring-white/10">
+            <div className="mb-2 flex items-center justify-between text-xs font-semibold">
+              <span>Test du microphone</span>
+              <span className={micOn && audioLevel > 0.02 ? "text-accent-green" : "text-white/55"}>
+                {!micOn ? "Micro coupé" : audioLevel > 0.02 ? "Voix détectée" : "Parlez pour tester"}
+              </span>
+            </div>
+            <AudioLevelMeter level={micOn ? audioLevel : 0} />
+            <p className="mt-2 text-xs text-white/60">La barre doit bouger avec votre voix avant de rejoindre.</p>
           </div>
         </section>
 

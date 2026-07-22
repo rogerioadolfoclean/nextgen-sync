@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Mic, MicOff, Video, VideoOff, MonitorUp, Users, MessageSquare, Smile,
-  Ellipsis, Layers, ShieldCheck, Captions, X, Hand, Circle, PenLine,
+  Ellipsis, Layers, ShieldCheck, Captions, Hand, Circle, PenLine,
   Image as ImageIcon, Grid3x3, Square, LayoutGrid, Link2, Check, BarChart3, UsersRound, Sparkles,
 } from "lucide-react";
 import type { Meeting } from "@/lib/meetings";
@@ -21,6 +21,8 @@ import { useLiveKit } from "@/lib/use-livekit";
 import { useLocalCamera } from "@/lib/use-local-camera";
 import { useIdentity } from "@/components/identity-gate";
 import { AiCopilotPanel } from "@/components/stage/ai-copilot-panel";
+import { useAudioLevel } from "@/lib/use-audio-level";
+import { AudioLevelMeter } from "@/components/stage/audio-level-meter";
 
 type Layout = "galerie" | "intervenant" | "tableau";
 
@@ -40,8 +42,9 @@ export function MeetingRoom({ meeting, initialMicOn = true, initialCamOn = true 
   const toggleMic = lk.enabled ? lk.toggleMic : () => setLocalMic((v) => !v);
   const toggleCam = lk.enabled ? lk.toggleCam : () => setLocalCam((v) => !v);
   const toggleShare = lk.enabled ? lk.toggleShare : () => setLocalShare((v) => !v);
-  const localCamera = useLocalCamera(!lk.enabled && camOn);
+  const localCamera = useLocalCamera(!lk.enabled && camOn, !lk.enabled && micOn);
   const selfStream = lk.enabled ? lk.localStream : localCamera.stream;
+  const audioLevel = useAudioLevel(selfStream, micOn);
 
   // Panneaux & fonctionnalités
   const [showChat, setShowChat] = useState(true);
@@ -61,17 +64,38 @@ export function MeetingRoom({ meeting, initialMicOn = true, initialCamOn = true 
   const { items: flying, push: pushReaction } = useFlyingReactions();
 
   // Participants : moi (hôte) + les autres, avec état mutable côté hôte.
-  const [people, setPeople] = useState<RoomParticipant[]>(() =>
-    meeting.participants.map((p, i) => ({
-      id: p.id,
-      name: i === 0 ? `${realName} (moi)` : p.name,
-      avatarUrl: p.avatarUrl,
-      muted: i === 0 ? !micOn : p.muted,
-      handRaised: false,
-      isHost: i === 0,
-      isSelf: i === 0,
-    })),
-  );
+  const [people, setPeople] = useState<RoomParticipant[]>(() => [{
+    id: identity?.id ?? "self",
+    name: `${realName} (moi)`,
+    muted: !micOn,
+    handRaised: false,
+    isHost: true,
+    isSelf: true,
+  }]);
+
+  useEffect(() => {
+    // Synchronise la liste mutable de moderation avec les participants LiveKit.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPeople((previous) => {
+      const self = previous.find((p) => p.isSelf) ?? previous[0];
+      if (!lk.enabled) return [{ ...self, name: `${realName} (moi)`, muted: !micOn }];
+      return [
+        { ...self, name: `${realName} (moi)`, muted: !micOn },
+        ...lk.remotes.map((remote) => ({
+          id: remote.identity,
+          name: remote.name,
+          muted: remote.stream.getAudioTracks().length === 0,
+          handRaised: false,
+          isHost: false,
+          isSelf: false,
+        })),
+      ];
+    });
+  }, [lk.enabled, lk.remotes, micOn, realName]);
+
+  const streamFor = (participant: RoomParticipant) => participant.isSelf
+    ? (selfStream ?? undefined)
+    : (lk.remotes.find((remote) => remote.identity === participant.id)?.stream ?? undefined);
 
   const send = (text: string) => {
     setMessages((prev) => [
@@ -111,8 +135,13 @@ export function MeetingRoom({ meeting, initialMicOn = true, initialCamOn = true 
     <>
       <MobileCall
         meeting={meeting}
+        participants={people}
+        audioLevel={audioLevel}
+        liveStatus={lk.enabled ? (lk.connected ? "transmis" : "connexion") : "non-configure"}
         controls={{ micOn, camOn, sharing, toggleMic, toggleCam, toggleShare, localStream: selfStream, speakerStream: lk.enabled ? (lk.remotes[0]?.stream ?? null) : null }}
       />
+
+      {lk.remotes.map((remote) => <RemoteAudio key={remote.identity} stream={remote.stream} />)}
 
       <div className="hidden h-dvh flex-col bg-stage md:flex">
         {/* En-tête */}
@@ -166,8 +195,8 @@ export function MeetingRoom({ meeting, initialMicOn = true, initialCamOn = true 
         {/* Bandeau vignettes (vue intervenant/tableau) */}
         {layout !== "galerie" && (
           <div className="flex shrink-0 items-center gap-1.5 px-2 pb-2">
-            {people.slice(0, 6).map((p, i) => (
-              <Tile key={p.id} p={p} stream={i === 0 ? (selfStream ?? undefined) : undefined} mirror={i === 0} small />
+            {people.slice(0, 6).map((p) => (
+              <Tile key={p.id} p={p} stream={streamFor(p)} mirror={p.isSelf} small />
             ))}
             {raisedCount > 0 && (
               <span className="ml-auto rounded-full bg-accent-orange/20 px-2 py-0.5 text-[10px] font-semibold text-accent-orange">
@@ -184,14 +213,14 @@ export function MeetingRoom({ meeting, initialMicOn = true, initialCamOn = true 
 
             {layout === "intervenant" && (
               <div className="grid size-full place-items-center bg-navy p-4">
-                <Tile p={people[0]} stream={selfStream ?? undefined} mirror className="aspect-video w-full max-w-[720px]" big />
+                <Tile p={people[0]} stream={streamFor(people[0])} mirror={people[0]?.isSelf} className="aspect-video w-full max-w-[720px]" big />
               </div>
             )}
 
             {layout === "galerie" && (
               <div className="grid size-full grid-cols-2 gap-2 overflow-y-auto bg-navy p-3 lg:grid-cols-3">
-                {people.map((p, i) => (
-                  <Tile key={p.id} p={p} stream={i === 0 ? (selfStream ?? undefined) : undefined} mirror={i === 0} className="aspect-video w-full" />
+                {people.map((p) => (
+                  <Tile key={p.id} p={p} stream={streamFor(p)} mirror={p.isSelf} className="aspect-video w-full" />
                 ))}
               </div>
             )}
@@ -241,11 +270,29 @@ export function MeetingRoom({ meeting, initialMicOn = true, initialCamOn = true 
               </Dropdown>
             </div>
           )}
+          <div className="absolute bottom-3 left-4 z-20 w-28">
+            <AudioLevelMeter level={micOn ? audioLevel : 0} />
+            <p className={`mt-1 text-[9px] font-semibold ${lk.connected ? "text-accent-green" : "text-amber-300"}`}>
+              {lk.connected ? "Audio transmis" : lk.enabled ? "Connexion audio…" : "Audio non transmis"}
+            </p>
+          </div>
           <ControlBar controls={controls} compact className="shrink-0" />
         </div>
       </div>
     </>
   );
+}
+
+function RemoteAudio({ stream }: { stream: MediaStream }) {
+  const ref = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    const audio = ref.current;
+    if (!audio) return;
+    audio.srcObject = stream;
+    void audio.play().catch(() => undefined);
+    return () => { audio.srcObject = null; };
+  }, [stream]);
+  return <audio ref={ref} autoPlay playsInline className="hidden" />;
 }
 
 /* ————— Sous-composants ————— */
