@@ -19,11 +19,14 @@ import { HostParticipantsPanel, type RoomParticipant } from "@/components/stage/
 import { ReactionsBar, FlyingReactions, useFlyingReactions } from "@/components/stage/reactions";
 import { useLiveKit } from "@/lib/use-livekit";
 import { useLocalCamera } from "@/lib/use-local-camera";
+import { useIdentity } from "@/components/identity-gate";
 
 type Layout = "galerie" | "intervenant" | "tableau";
 
 export function MeetingRoom({ meeting }: { meeting: Meeting }) {
   const router = useRouter();
+  const identity = useIdentity();
+  const realName = identity?.fullName ?? "Participant";
   const lk = useLiveKit(meeting.code, "host");
 
   // Contrôles A/V (LiveKit si dispo, sinon état local + vraie webcam pour "moi").
@@ -59,7 +62,7 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
   const [people, setPeople] = useState<RoomParticipant[]>(() =>
     meeting.participants.map((p, i) => ({
       id: p.id,
-      name: i === 0 ? `${p.name} (moi)` : p.name,
+      name: i === 0 ? `${realName} (moi)` : p.name,
       avatarUrl: p.avatarUrl,
       muted: i === 0 ? !micOn : p.muted,
       handRaised: false,
@@ -71,7 +74,7 @@ export function MeetingRoom({ meeting }: { meeting: Meeting }) {
   const send = (text: string) => {
     setMessages((prev) => [
       ...prev,
-      { id: `c${Date.now()}`, author: "Rogerio", text, time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) },
+      { id: `c${Date.now()}`, author: realName, text, time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) },
     ]);
   };
 
