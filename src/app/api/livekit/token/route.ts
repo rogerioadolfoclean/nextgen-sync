@@ -18,6 +18,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const room = searchParams.get("room");
   const role = searchParams.get("role") ?? "attendee";
+  const requestedName = searchParams.get("name")?.trim();
+  const participantId = searchParams.get("participantId")?.trim();
 
   if (!room) {
     return NextResponse.json({ error: "room requis" }, { status: 400 });
@@ -28,12 +30,18 @@ export async function GET(request: Request) {
   }
 
   const user = await getSessionUser();
+  const displayName = requestedName && requestedName.length >= 3 && requestedName.length <= 100
+    ? requestedName
+    : user.name;
+  const identity = participantId && /^[a-zA-Z0-9-]{8,64}$/.test(participantId)
+    ? participantId
+    : user.id;
   await ensureRoom(room);
 
   const token = await createAccessToken({
     room,
-    identity: user.id,
-    name: user.name,
+    identity,
+    name: displayName,
     canPublish: role === "host" || role === "moderator" || role === "speaker",
   });
 
@@ -41,6 +49,6 @@ export async function GET(request: Request) {
     enabled: true,
     token,
     url: publicUrl(),
-    identity: user.id,
+    identity,
   });
 }
