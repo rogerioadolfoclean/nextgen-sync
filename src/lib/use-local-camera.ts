@@ -62,6 +62,8 @@ export function useLocalCamera(active: boolean, withAudio = false): LocalCamera 
 
     return () => {
       cancelled = true;
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     };
   }, [active, withAudio]);
 
