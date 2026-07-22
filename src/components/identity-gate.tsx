@@ -5,7 +5,7 @@ import { UserRoundCheck } from "lucide-react";
 
 const STORAGE_KEY = "nextgen-real-name";
 
-type Identity = { firstName: string; lastName: string; fullName: string };
+type Identity = { id: string; firstName: string; lastName: string; fullName: string };
 
 const IdentityContext = createContext<Identity | null>(null);
 
@@ -23,7 +23,11 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null") as Identity | null;
-      if (saved?.firstName?.trim() && saved?.lastName?.trim()) setIdentity(saved);
+      if (saved?.firstName?.trim() && saved?.lastName?.trim()) {
+        const complete = { ...saved, id: saved.id || crypto.randomUUID() };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(complete));
+        setIdentity(complete);
+      }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -40,7 +44,7 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
       setError("Veuillez saisir votre vrai prénom et votre vrai nom.");
       return;
     }
-    const next = { firstName: first, lastName: last, fullName: `${first} ${last}` };
+    const next = { id: crypto.randomUUID(), firstName: first, lastName: last, fullName: `${first} ${last}` };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     setIdentity(next);
   };
