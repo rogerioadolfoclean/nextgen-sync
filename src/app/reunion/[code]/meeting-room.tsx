@@ -23,15 +23,15 @@ import { useIdentity } from "@/components/identity-gate";
 
 type Layout = "galerie" | "intervenant" | "tableau";
 
-export function MeetingRoom({ meeting }: { meeting: Meeting }) {
+export function MeetingRoom({ meeting, initialMicOn = true, initialCamOn = true }: { meeting: Meeting; initialMicOn?: boolean; initialCamOn?: boolean }) {
   const router = useRouter();
   const identity = useIdentity();
   const realName = identity?.fullName ?? "Participant";
-  const lk = useLiveKit(meeting.code, "host", realName, identity?.id);
+  const lk = useLiveKit(meeting.code, "host", realName, identity?.id, initialMicOn, initialCamOn);
 
   // Contrôles A/V (LiveKit si dispo, sinon état local + vraie webcam pour "moi").
-  const [localMic, setLocalMic] = useState(true);
-  const [localCam, setLocalCam] = useState(true);
+  const [localMic, setLocalMic] = useState(initialMicOn);
+  const [localCam, setLocalCam] = useState(initialCamOn);
   const [localShare, setLocalShare] = useState(false);
   const micOn = lk.enabled ? lk.micOn : localMic;
   const camOn = lk.enabled ? lk.camOn : localCam;
