@@ -73,7 +73,7 @@ export async function getMeeting(code: string): Promise<Meeting | null> {
     "SELECT id, title, started_at FROM meetings WHERE code = $1 AND kind = 'meeting'",
     [code],
   );
-  if (!meeting) return null;
+  if (!meeting) return demoMeeting(code);
 
   const [participants, messages, board] = await Promise.all([
     query<{ id: string; display_name: string; muted: boolean }>(
