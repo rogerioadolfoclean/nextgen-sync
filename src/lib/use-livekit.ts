@@ -39,7 +39,7 @@ export type LiveKitState = {
  * s'arrete la et les composants gardent leur rendu demo (avatars). Il suffit
  * d'ajouter les cles LiveKit pour que la vraie video HD s'active.
  */
-export function useLiveKit(roomCode: string, role: string, displayName?: string, participantId?: string): LiveKitState {
+export function useLiveKit(roomCode: string, role: string, displayName?: string, participantId?: string, initialMicOn = true, initialCamOn = true): LiveKitState {
   const roomRef = useRef<Room | null>(null);
   const [enabled, setEnabled] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -47,8 +47,8 @@ export function useLiveKit(roomCode: string, role: string, displayName?: string,
   const [error, setError] = useState<string | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remotes, setRemotes] = useState<RemoteFeed[]>([]);
-  const [micOn, setMicOn] = useState(true);
-  const [camOn, setCamOn] = useState(true);
+  const [micOn, setMicOn] = useState(initialMicOn);
+  const [camOn, setCamOn] = useState(initialCamOn);
   const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
@@ -116,8 +116,8 @@ export function useLiveKit(roomCode: string, role: string, displayName?: string,
         const canPublish =
           role === "host" || role === "moderator" || role === "speaker";
         if (canPublish) {
-          await room.localParticipant.setCameraEnabled(true);
-          await room.localParticipant.setMicrophoneEnabled(true);
+          await room.localParticipant.setCameraEnabled(initialCamOn);
+          await room.localParticipant.setMicrophoneEnabled(initialMicOn);
         }
         refreshRemotes();
       } catch (err) {
@@ -136,7 +136,7 @@ export function useLiveKit(roomCode: string, role: string, displayName?: string,
       room.disconnect();
       roomRef.current = null;
     };
-  }, [roomCode, role, displayName, participantId]);
+  }, [roomCode, role, displayName, participantId, initialMicOn, initialCamOn]);
 
   const toggleMic = useCallback(() => {
     const room = roomRef.current;
