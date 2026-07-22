@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getWebinar } from "@/lib/webinars";
 import { WebinarStage } from "./webinar-stage";
+import { IdentityGate } from "@/components/identity-gate";
 
 export default async function WebinairePage(props: {
   params: Promise<{ code: string }>;
@@ -10,5 +11,5 @@ export default async function WebinairePage(props: {
   const webinar = await getWebinar(code);
   if (!webinar) notFound();
 
-  return <WebinarStage webinar={webinar} />;
+  return <IdentityGate><WebinarStage webinar={webinar} /></IdentityGate>;
 }
