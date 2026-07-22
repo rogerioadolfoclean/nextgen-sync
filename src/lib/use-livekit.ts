@@ -39,7 +39,7 @@ export type LiveKitState = {
  * s'arrete la et les composants gardent leur rendu demo (avatars). Il suffit
  * d'ajouter les cles LiveKit pour que la vraie video HD s'active.
  */
-export function useLiveKit(roomCode: string, role: string): LiveKitState {
+export function useLiveKit(roomCode: string, role: string, displayName?: string, participantId?: string): LiveKitState {
   const roomRef = useRef<Room | null>(null);
   const [enabled, setEnabled] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -95,7 +95,7 @@ export function useLiveKit(roomCode: string, role: string): LiveKitState {
       setConnecting(true);
       try {
         const res = await fetch(
-          `/api/livekit/token?room=${encodeURIComponent(roomCode)}&role=${encodeURIComponent(role)}`,
+          `/api/livekit/token?room=${encodeURIComponent(roomCode)}&role=${encodeURIComponent(role)}&name=${encodeURIComponent(displayName ?? "")}&participantId=${encodeURIComponent(participantId ?? "")}`,
         );
         const data = await res.json();
         if (cancelled) return;
@@ -136,7 +136,7 @@ export function useLiveKit(roomCode: string, role: string): LiveKitState {
       room.disconnect();
       roomRef.current = null;
     };
-  }, [roomCode, role]);
+  }, [roomCode, role, displayName, participantId]);
 
   const toggleMic = useCallback(() => {
     const room = roomRef.current;
