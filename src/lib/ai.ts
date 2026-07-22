@@ -23,6 +23,48 @@ export type MeetingRecap = {
   actionItems: { task: string; owner: string | null }[];
 };
 
+export type MeetingSuggestions = {
+  overview: string;
+  suggestions: string[];
+  questions: string[];
+  risks: string[];
+  actions: { task: string; owner: string | null; priority: "haute" | "moyenne" | "basse" }[];
+};
+
+/** Analyse vivante de la réunion et recommandations concrètes pour l'organisateur. */
+export async function suggestMeetingActions(context: string): Promise<MeetingSuggestions> {
+  const lines = context.split("\n").map((line) => line.trim()).filter(Boolean).slice(-200);
+  const discussion = lines.slice(1);
+  const questions = discussion.filter((line) => line.includes("?")).slice(-4).map((line) => line.replace(/^[^:]+:\s*/, ""));
+  const actionLines = discussion.filter((line) => /\b(faut|devons|doit|action|faire|préparer|envoyer|corriger|tester|publier)\b/i.test(line)).slice(-4);
+  const riskLines = discussion.filter((line) => /\b(risque|problème|erreur|bloqué|retard|impossible|attention)\b/i.test(line)).slice(-3);
+  const speakers = new Set(discussion.map((line) => line.split(":")[0]).filter(Boolean));
+
+  return {
+    overview: discussion.length
+      ? `${discussion.length} contribution${discussion.length > 1 ? "s" : ""} analysée${discussion.length > 1 ? "s" : ""}. ${speakers.size} participant${speakers.size > 1 ? "s" : ""} actif${speakers.size > 1 ? "s" : ""}. Le copilote recommande de convertir les échanges en décisions datées et attribuées.`
+      : "La réunion vient de commencer. Définissez l'objectif et le résultat attendu pour obtenir des recommandations plus précises.",
+    suggestions: [
+      "Formuler clairement la décision principale attendue",
+      speakers.size < 2 ? "Inviter les autres participants à donner leur avis" : "Vérifier que chaque participant valide la conclusion",
+      "Attribuer un responsable et une échéance à chaque prochaine étape",
+    ],
+    questions: questions.length ? questions : [
+      "Quelle décision doit absolument être prise aujourd'hui ?",
+      "Qui sera responsable de la prochaine étape ?",
+    ],
+    risks: riskLines.length
+      ? riskLines.map((line) => line.replace(/^[^:]+:\s*/, ""))
+      : ["Les décisions sans responsable ni date limite risquent de ne pas être exécutées"],
+    actions: actionLines.length
+      ? actionLines.map((line, index) => ({ task: line.replace(/^[^:]+:\s*/, ""), owner: null, priority: index === 0 ? "haute" as const : "moyenne" as const }))
+      : [
+          { task: "Confirmer les décisions finales", owner: null, priority: "haute" },
+          { task: "Partager le compte rendu aux participants", owner: null, priority: "moyenne" },
+        ],
+  };
+}
+
 /**
  * Compte rendu automatique d'une reunion a partir de sa transcription :
  * resume, decisions et taches. Sortie structuree validee par schema.
